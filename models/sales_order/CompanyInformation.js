@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize'
-import sequelize from '../config/db.config'
+import sequelize from '../../config/db.config.js'
 
 const CompanyInformation = sequelize.define('company_information', {
   company_name: {
@@ -18,6 +18,10 @@ const CompanyInformation = sequelize.define('company_information', {
     type: DataTypes.STRING(100),
     allowNull: true
   },
+  owner_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  }
 }, {
   freezeTableName: true,
   timestamps: true

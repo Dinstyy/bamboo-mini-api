@@ -1,0 +1,5 @@
+build
+node_modules
+cek_value.log
+.env
+package-lock.json

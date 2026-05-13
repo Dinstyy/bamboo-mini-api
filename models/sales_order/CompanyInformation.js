@@ -1,5 +1,6 @@
 import { DataTypes } from 'sequelize'
 import sequelize from '../../config/db.config.js'
+import User from '../User.js'  // ← import User
 
 const CompanyInformation = sequelize.define('company_information', {
   company_name: {
@@ -25,6 +26,8 @@ const CompanyInformation = sequelize.define('company_information', {
 }, {
   freezeTableName: true,
   timestamps: true
-})
+});
+
+CompanyInformation.belongsTo(User, { foreignKey: 'owner_id', as: 'owner' });
 
 export default CompanyInformation;

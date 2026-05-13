@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import express from 'express';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
@@ -20,7 +21,6 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ============ MIDDLEWARE ============
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -147,29 +147,28 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// ============ PUBLIC ENDPOINT (untuk register) ============
-app.get('/api/public/companies', async (req, res) => {
-    try {
-        const companies = await CompanyInformation.findAll({
-            attributes: ['id', 'company_name', 'address', 'phone', 'email']
-        });
-        res.json(companies);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
 app.get('/api/companies', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
         
+        const user = await User.findByPk(userId);
+        
         const companies = await CompanyInformation.findAll({
             where: {
-                owner_id: userId
+                [Op.or]: [
+                    { owner_id: userId },        
+                    { id: user.company_id }      
+                ]
             },
-            attributes: ['id', 'company_name', 'address', 'phone', 'email', 'owner_id']
+            attributes: ['id', 'company_name', 'address', 'phone', 'email', 'owner_id'],
+            include: [{
+                model: User,
+                as: 'owner',
+                attributes: ['username'],
+                required: false
+            }]
         });
+        
         res.json(companies);
     } catch (error) {
         console.error(error);
@@ -178,32 +177,99 @@ app.get('/api/companies', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/companies/add', authenticateToken, async (req, res) => {
-  try {
-    const { company_name, phone, address } = req.body;
-    const userId = req.user.id;
-    const userEmail = req.user.email;
-    
-    if (!company_name) {
-      return res.status(400).json({ error: 'Company name is required' });
+    try {
+        const { company_name, phone, address } = req.body;
+        const userId = req.user.id;
+        const userEmail = req.user.email;
+        
+        if (!company_name) {
+            return res.status(400).json({ error: 'Company name is required' });
+        }
+        
+        const existingCompany = await CompanyInformation.findOne({
+            where: { 
+                company_name: company_name,
+                owner_id: userId 
+            }
+        });
+        
+        if (existingCompany) {
+            return res.status(400).json({ error: 'You already have a company with this name' });
+        }
+        
+        const newCompany = await CompanyInformation.create({
+            company_name,
+            phone: phone || null,
+            address: address || null,
+            email: userEmail || null,
+            owner_id: userId 
+        });
+        
+        res.status(201).json({
+            success: true,
+            id: newCompany.id,
+            message: 'Company added successfully'
+        });
+    } catch (error) {
+        console.error('Error adding company:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
-    
-    const newCompany = await CompanyInformation.create({
-      company_name,
-      phone: phone || null,
-      address: address || null,
-      email: userEmail || null,
-      owner_id: userId
-    });
-    
-    res.status(201).json({
-      success: true,
-      id: newCompany.id,
-      message: 'Company added successfully'
-    });
-  } catch (error) {
-    console.error('Error adding company:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+});
+
+app.post('/api/companies/switch/:companyId', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { companyId } = req.params;
+        
+        const company = await CompanyInformation.findByPk(companyId);
+        if (!company) {
+            return res.status(404).json({ error: 'Company not found' });
+        }
+        
+        await User.update(
+            { company_id: companyId },
+            { where: { id: userId } }
+        );
+        
+        const updatedUser = await User.findByPk(userId);
+        const newToken = jwt.sign(
+            { 
+                id: updatedUser.id, 
+                username: updatedUser.username, 
+                email: updatedUser.email, 
+                companyId: updatedUser.company_id 
+            },
+            process.env.ACCESS_TOKEN_SECRET,
+            { expiresIn: '24h' }
+        );
+        
+        res.json({
+            success: true,
+            message: 'Switched to company successfully',
+            token: newToken,
+            user: {
+                id: updatedUser.id,
+                username: updatedUser.username,
+                email: updatedUser.email,
+                company_id: updatedUser.company_id
+            }
+        });
+    } catch (error) {
+        console.error('Error switching company:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.get('/api/public/companies', async (req, res) => {
+    try {
+        const companies = await CompanyInformation.findAll({
+            attributes: ['id', 'company_name', 'address', 'phone', 'email', 'owner_id']
+        });
+        res.json(companies);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 app.put('/api/companies/:id', authenticateToken, async (req, res) => {

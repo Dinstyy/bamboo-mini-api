@@ -1,0 +1,3 @@
+[submodule "bamboo-models"]
+	path = bamboo-models
+	url = https://github.com/Dinstyy/bamboo-models.git

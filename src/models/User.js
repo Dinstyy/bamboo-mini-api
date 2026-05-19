@@ -1,11 +1,10 @@
 import { DataTypes } from 'sequelize';
-import sequelize from '../config/db.config.js';
+import sequelize from '../../config/db.config.js'; 
 
 const User = sequelize.define('user', {
     username: {
         type: DataTypes.STRING(100),
         allowNull: false,
-        unique: true
     },
     password: {
         type: DataTypes.STRING(255),
@@ -21,7 +20,13 @@ const User = sequelize.define('user', {
     }
 }, {
     freezeTableName: true,
-    timestamps: true
+    timestamps: true,
+    indexes: [
+        {
+            unique: true,
+            fields: ['username'] 
+        }
+    ]
 });
 
 export default User;

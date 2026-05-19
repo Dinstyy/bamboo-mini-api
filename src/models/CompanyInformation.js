@@ -1,6 +1,6 @@
-import { DataTypes } from 'sequelize'
-import sequelize from '../../config/db.config.js'
-import User from '../User.js'  // ← import User
+import { DataTypes } from 'sequelize';
+import sequelize from '../../config/db.config.js';
+import User from './User.js'
 
 const CompanyInformation = sequelize.define('company_information', {
   company_name: {

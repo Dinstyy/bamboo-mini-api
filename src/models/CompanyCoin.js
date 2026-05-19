@@ -1,5 +1,5 @@
-import { DataTypes } from 'sequelize'
-import sequelize from '../../config/db.config'
+import { DataTypes } from 'sequelize';
+import sequelize from '../../config/db.config';
 
 const CompanyCoin = sequelize.define('company_coin', {
   total_coin: {

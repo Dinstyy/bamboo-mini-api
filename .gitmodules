@@ -1,3 +1,6 @@
 [submodule "bamboo-models"]
 	path = bamboo-models
 	url = https://github.com/Dinstyy/bamboo-models.git
+[submodule "src/models"]
+	path = src/models
+	url = https://github.com/Dinstyy/bamboo-models.git

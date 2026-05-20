@@ -22,6 +22,14 @@ import {
     exportToAccurate,      
     getExportStatus  
 } from '../src/controllers/process_stages/index.js';
+import { 
+    fetchSalesQuotationByDate,
+    getSalesQuotationGroups,
+    getSalesQuotationGroupDetail,
+    deleteSalesQuotationDetail,
+    deleteSalesQuotationGroup,
+    getSalesQuotationList
+} from '../src/controllers/sales_quotation/index.js';
 
 const router = express.Router();
 
@@ -38,7 +46,6 @@ router.delete('/api/companies/:id', authenticateToken, deleteCompany);
 router.get('/api/process-stages/list', authenticateToken, getProcessStagesList);
 router.post('/api/process-stages/list', authenticateToken, getProcessStagesList);
 router.get('/api/process-stages/detail', authenticateToken, getProcessStageDetail);
-
 router.post('/api/process-stages/fetch', authenticateToken, fetchProcessStagesByDate);
 router.get('/api/process-stages/groups', authenticateToken, getProcessStagesGroups);
 router.get('/api/process-stages/groups/:id', authenticateToken, getProcessStagesGroupDetail);
@@ -46,5 +53,12 @@ router.delete('/api/process-stages/groups/:id', authenticateToken, deleteProcess
 router.delete('/api/process-stages/details/:id', authenticateToken, deleteProcessStagesDetail);
 router.post('/api/process-stages/export/:id', authenticateToken, exportToAccurate);
 router.get('/api/process-stages/export/:id/status', authenticateToken, getExportStatus);
+
+router.post('/api/sales-quotation/fetch', authenticateToken, fetchSalesQuotationByDate);
+router.get('/api/sales-quotation/groups', authenticateToken, getSalesQuotationGroups);
+router.get('/api/sales-quotation/groups/:id', authenticateToken, getSalesQuotationGroupDetail);
+router.delete('/api/sales-quotation/groups/:id', authenticateToken, deleteSalesQuotationGroup);
+router.delete('/api/sales-quotation/details/:id', authenticateToken, deleteSalesQuotationDetail);
+router.get('/api/sales-quotation/list', authenticateToken, getSalesQuotationList);
 
 export default router;

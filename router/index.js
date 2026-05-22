@@ -28,8 +28,17 @@ import {
     getSalesQuotationGroupDetail,
     deleteSalesQuotationDetail,
     deleteSalesQuotationGroup,
-    getSalesQuotationList
+    getSalesQuotationList,
+    getSalesQuotationDetail,
+    bulkExportToAccurate  
 } from '../src/controllers/sales_quotation/index.js';
+import { 
+    fetchAllCustomers,
+    getCustomerGroups,
+    getCustomerGroupDetail,
+    deleteCustomerDetail,
+    deleteCustomerGroup
+} from '../src/controllers/master_customer/index.js';
 
 const router = express.Router();
 
@@ -60,5 +69,13 @@ router.get('/api/sales-quotation/groups/:id', authenticateToken, getSalesQuotati
 router.delete('/api/sales-quotation/groups/:id', authenticateToken, deleteSalesQuotationGroup);
 router.delete('/api/sales-quotation/details/:id', authenticateToken, deleteSalesQuotationDetail);
 router.get('/api/sales-quotation/list', authenticateToken, getSalesQuotationList);
+router.get('/api/sales-quotation/detail', authenticateToken, getSalesQuotationDetail);
+router.post('/api/sales-quotation/bulk-export', authenticateToken, bulkExportToAccurate);
+
+router.post('/api/master-customer/fetch', authenticateToken, fetchAllCustomers);
+router.get('/api/master-customer/groups', authenticateToken, getCustomerGroups);
+router.get('/api/master-customer/groups/:id', authenticateToken, getCustomerGroupDetail);
+router.delete('/api/master-customer/groups/:id', authenticateToken, deleteCustomerGroup);
+router.delete('/api/master-customer/details/:id', authenticateToken, deleteCustomerDetail);
 
 export default router;

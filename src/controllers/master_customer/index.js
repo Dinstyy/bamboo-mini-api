@@ -26,7 +26,8 @@ export const fetchAllCustomers = async (req, res) => {
         const group = await CustomerGroup.create({
             no_setting: `CUST_${Date.now()}`,
             status: 'IN_PROGRESS',
-            total_data: 0
+            total_data: 0,
+            total_pages: 0 
         });
         
         processFetchAllCustomers(group.id);
@@ -51,10 +52,8 @@ export const fetchAllCustomers = async (req, res) => {
 
 const processFetchAllCustomers = async (groupId) => {
     try {
-        let allCustomers = [];
-        let currentPage = 1;
         let totalPages = 1;
-        const pageSize = 20; 
+        const pageSize = 20;
         
         console.log(`Mulai fetch semua customer...`);
         
@@ -71,6 +70,8 @@ const processFetchAllCustomers = async (groupId) => {
             console.log(`Total pages: ${totalPages}, Total records: ${firstResponse.sp.rowCount}`);
         }
         
+        let totalProcessedCustomers = 0;
+        
         for (let page = 1; page <= totalPages; page++) {
             const params = {
                 'sp.page': page,
@@ -81,6 +82,8 @@ const processFetchAllCustomers = async (groupId) => {
             const data = await accurateRequest('/customer/list.do', params);
             const customerIds = data.d || [];
             
+            const pageCustomers = [];
+            
             for (const customer of customerIds) {
                 try {
                     const detailResponse = await accurateRequest('/customer/detail.do', {
@@ -89,8 +92,8 @@ const processFetchAllCustomers = async (groupId) => {
                     
                     if (detailResponse.s && detailResponse.d) {
                         const customerDetail = detailResponse.d;
-                        allCustomers.push({
-                            group_id: groupId, 
+                        pageCustomers.push({
+                            group_id: groupId,
                             accurate_id: String(customerDetail.id),
                             customerNo: customerDetail.customerNo || null,
                             customerName: customerDetail.name || null,
@@ -101,8 +104,8 @@ const processFetchAllCustomers = async (groupId) => {
                     }
                 } catch (err) {
                     console.error(`Error fetching detail for customer ${customer.id}:`, err.message);
-                    allCustomers.push({
-                        group_id: groupId, 
+                    pageCustomers.push({
+                        group_id: groupId,
                         accurate_id: String(customer.id),
                         customerNo: null,
                         customerName: null,
@@ -115,33 +118,32 @@ const processFetchAllCustomers = async (groupId) => {
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
             
-            console.log(`Page ${page}: selesai memproses ${customerIds.length} customers (total: ${allCustomers.length})`);
-            
-            if (allCustomers.length >= 500) {
-                await saveBatchToDatabase(groupId, allCustomers.splice(0, 500));
+            if (pageCustomers.length > 0) {
+                await CustomerDetail.bulkCreate(pageCustomers);
+                totalProcessedCustomers += pageCustomers.length;
+                
+                await CustomerGroup.update({
+                    total_data: totalProcessedCustomers,
+                    current_page: page
+                }, {
+                    where: { id: groupId }
+                });
+                
+                console.log(`Page ${page}: selesai memproses ${pageCustomers.length} customers (total: ${totalProcessedCustomers})`);
             }
             
             await new Promise(resolve => setTimeout(resolve, 200));
         }
         
-        console.log(`Selesai fetch. Total customers: ${allCustomers.length}`);
-        
-        if (allCustomers.length > 0) {
-            await saveBatchToDatabase(groupId, allCustomers);
-        }
-        
-        const totalSaved = await CustomerDetail.count({ where: { group_id: groupId } });
-        
         await CustomerGroup.update({
             status: 'COMPLETED',
-            total_data: totalSaved,
-            total_pages: totalPages,
-            total_records: totalSaved
+            total_data: totalProcessedCustomers,
+            total_pages: totalPages 
         }, {
             where: { id: groupId }
         });
         
-        console.log(`Group ${groupId} completed with ${totalSaved} customers from ${totalPages} pages`);
+        console.log(`Group ${groupId} completed with ${totalProcessedCustomers} customers from ${totalPages} pages`);
         
     } catch (error) {
         console.error(`Error processing group ${groupId}:`, error);
